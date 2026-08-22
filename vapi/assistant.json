@@ -196,13 +196,28 @@
     "voiceId": "sarah",
     "stability": 0.5,
     "similarityBoost": 0.75,
-    "speed": 1.0
+    "speed": 0.95
   },
   "transcriber": {
     "provider": "deepgram",
     "model": "nova-3",
     "language": "en-US",
-    "numerals": true
+    "numerals": true,
+    "keywords": [
+      "Aetna:2",
+      "Cigna:2",
+      "Humana:2",
+      "Kaiser:2",
+      "Medicaid:2",
+      "Medicare:2",
+      "UnitedHealthcare:2",
+      "Anthem:2",
+      "Centene:2",
+      "Molina:2",
+      "Tricare:2",
+      "BlueCross:2",
+      "BlueShield:2"
+    ]
   },
   "server": {
     "url": "__BASE_URL__/voice/event"
