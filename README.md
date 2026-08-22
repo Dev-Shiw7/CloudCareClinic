@@ -1,13 +1,13 @@
 # Voice AI Patient Registration
 
 A caller dials a US phone number, speaks to an intake coordinator named
-Riley, and is registered as a patient. Every field is validated and
+Shiwani, and is registered as a patient. Every field is validated and
 persisted server-side *as it is spoken*, so a dropped call loses nothing and
 the voice agent can never write invalid data.
 
 | | |
 |---|---|
-| **Phone number** | `__FILL_IN__` |
+| **Phone number** | **+1 (661) 215-8330** |
 | **API base URL** | `__FILL_IN__` |
 | **Interactive API docs** | `<API base URL>/docs` |
 | **Health check** | `<API base URL>/health` |
@@ -166,7 +166,7 @@ path.
 
 ### Voice tool endpoints
 
-`POST /voice/{start,capture,confirm,restart,finalize,event}` — internal, not
+`POST /voice/{start,lookup,capture,confirm,restart,finalize,event}` — internal, not
 part of the public contract, secret-protected. Documented in
 [`app/adapters/voice.py`](app/adapters/voice.py).
 

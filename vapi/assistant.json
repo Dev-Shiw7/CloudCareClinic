@@ -1,5 +1,5 @@
 {
-  "name": "Northside Intake - Riley",
+  "name": "CloudCare Clinic Intake",
   "firstMessageMode": "assistant-speaks-first-with-model-generated-message",
   "model": {
     "provider": "anthropic",
@@ -19,9 +19,39 @@
         "function": {
           "name": "start_call",
           "description": "Call this once, immediately, before greeting the caller. Returns whether this caller has an interrupted registration to resume, whether they are already a patient, and which field to ask for first.",
-          "parameters": { "type": "object", "properties": {} }
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
         },
-        "server": { "url": "__BASE_URL__/voice/start", "timeoutSeconds": 20 }
+        "server": {
+          "url": "__BASE_URL__/voice/start",
+          "timeoutSeconds": 20
+        }
+      },
+      {
+        "type": "function",
+        "async": false,
+        "function": {
+          "name": "lookup_patient",
+          "description": "Check whether a phone number already belongs to a registered patient. Use when the caller gives a number different from the one they are calling from.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "phone_number": {
+                "type": "string",
+                "description": "10-digit US phone number, any format"
+              }
+            },
+            "required": [
+              "phone_number"
+            ]
+          }
+        },
+        "server": {
+          "url": "__BASE_URL__/voice/lookup",
+          "timeoutSeconds": 20
+        }
       },
       {
         "type": "function",
@@ -36,29 +66,70 @@
                 "type": "object",
                 "description": "Map of field name to value. Only include fields the caller actually gave you.",
                 "properties": {
-                  "first_name": { "type": "string" },
-                  "last_name": { "type": "string" },
-                  "date_of_birth": { "type": "string", "description": "MM/DD/YYYY or YYYY-MM-DD" },
-                  "sex": { "type": "string", "description": "Male, Female, Other, or Decline to Answer" },
-                  "phone_number": { "type": "string", "description": "10-digit US number, any format" },
-                  "email": { "type": "string" },
-                  "address_line_1": { "type": "string" },
-                  "address_line_2": { "type": "string" },
-                  "city": { "type": "string" },
-                  "state": { "type": "string", "description": "2-letter abbreviation or full state name" },
-                  "zip_code": { "type": "string" },
-                  "insurance_provider": { "type": "string" },
-                  "insurance_member_id": { "type": "string" },
-                  "preferred_language": { "type": "string" },
-                  "emergency_contact_name": { "type": "string" },
-                  "emergency_contact_phone": { "type": "string" }
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "date_of_birth": {
+                    "type": "string",
+                    "description": "MM/DD/YYYY or YYYY-MM-DD"
+                  },
+                  "sex": {
+                    "type": "string",
+                    "description": "Male, Female, Other, or Decline to Answer"
+                  },
+                  "phone_number": {
+                    "type": "string",
+                    "description": "10-digit US number, any format"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "address_line_1": {
+                    "type": "string"
+                  },
+                  "address_line_2": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string",
+                    "description": "2-letter abbreviation or full state name"
+                  },
+                  "zip_code": {
+                    "type": "string"
+                  },
+                  "insurance_provider": {
+                    "type": "string"
+                  },
+                  "insurance_member_id": {
+                    "type": "string"
+                  },
+                  "preferred_language": {
+                    "type": "string"
+                  },
+                  "emergency_contact_name": {
+                    "type": "string"
+                  },
+                  "emergency_contact_phone": {
+                    "type": "string"
+                  }
                 }
               }
             },
-            "required": ["fields"]
+            "required": [
+              "fields"
+            ]
           }
         },
-        "server": { "url": "__BASE_URL__/voice/capture", "timeoutSeconds": 20 }
+        "server": {
+          "url": "__BASE_URL__/voice/capture",
+          "timeoutSeconds": 20
+        }
       },
       {
         "type": "function",
@@ -66,9 +137,15 @@
         "function": {
           "name": "get_confirmation",
           "description": "Call when all required fields are collected. Returns the read-back script broken into short chunks. Read each chunk as its own sentence with a pause between, then ask the caller to confirm.",
-          "parameters": { "type": "object", "properties": {} }
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
         },
-        "server": { "url": "__BASE_URL__/voice/confirm", "timeoutSeconds": 20 }
+        "server": {
+          "url": "__BASE_URL__/voice/confirm",
+          "timeoutSeconds": 20
+        }
       },
       {
         "type": "function",
@@ -76,9 +153,15 @@
         "function": {
           "name": "restart_registration",
           "description": "Call only if the caller explicitly asks to start over. Clears everything collected so far.",
-          "parameters": { "type": "object", "properties": {} }
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
         },
-        "server": { "url": "__BASE_URL__/voice/restart", "timeoutSeconds": 20 }
+        "server": {
+          "url": "__BASE_URL__/voice/restart",
+          "timeoutSeconds": 20
+        }
       },
       {
         "type": "function",
@@ -91,13 +174,20 @@
             "properties": {
               "mode": {
                 "type": "string",
-                "enum": ["auto", "create", "update"],
+                "enum": [
+                  "auto",
+                  "create",
+                  "update"
+                ],
                 "description": "Leave as auto unless the caller explicitly chose to create a new record."
               }
             }
           }
         },
-        "server": { "url": "__BASE_URL__/voice/finalize", "timeoutSeconds": 30 }
+        "server": {
+          "url": "__BASE_URL__/voice/finalize",
+          "timeoutSeconds": 30
+        }
       }
     ]
   },
@@ -114,8 +204,13 @@
     "language": "en-US",
     "numerals": true
   },
-  "server": { "url": "__BASE_URL__/voice/event" },
-  "serverMessages": ["end-of-call-report", "status-update"],
+  "server": {
+    "url": "__BASE_URL__/voice/event"
+  },
+  "serverMessages": [
+    "end-of-call-report",
+    "status-update"
+  ],
   "silenceTimeoutSeconds": 20,
   "maxDurationSeconds": 900,
   "backgroundSound": "office",
@@ -129,7 +224,11 @@
     "backoffSeconds": 1.0
   },
   "endCallFunctionEnabled": true,
-  "endCallPhrases": ["goodbye", "have a great day", "take care"],
+  "endCallPhrases": [
+    "goodbye",
+    "have a great day",
+    "take care"
+  ],
   "analysisPlan": {
     "summaryPrompt": "Summarise this patient registration call in two sentences: what was collected and how it ended."
   }
