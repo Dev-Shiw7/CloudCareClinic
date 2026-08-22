@@ -8,7 +8,7 @@ the voice agent can never write invalid data.
 | | |
 |---|---|
 | **Phone number** | **+1 (661) 215-8330** |
-| **API base URL** | `__FILL_IN__` |
+| **API base URL** | `https://boom-guides-minds-expected.trycloudflare.com` |
 | **Interactive API docs** | `<API base URL>/docs` |
 | **Health check** | `<API base URL>/health` |
 
@@ -256,6 +256,15 @@ Transcripts arrive on Vapi's `end-of-call-report` webhook and are stored on
   ZIP that doesn't match the city is accepted.
 - **Transcript storage is best-effort** — it depends on Vapi's webhook
   arriving.
+- **Hosted behind a Cloudflare Quick Tunnel**, not a cloud platform. Chosen
+  deliberately: the two free tiers tried either required a payment card
+  (Render) or are serverless-only, which suits neither the per-turn
+  connection pooling nor the startup hook this app uses (Vercel). The
+  trade-off the brief names explicitly - "ngrok over cloud deploy" - applies
+  here, with the added benefit of no cold start. The cost is that the
+  hostname is ephemeral: restarting the tunnel changes it and
+  `python -m vapi.provision` must be re-run. Railway (no card needed for its
+  free credit) is the migration path for a durable URL.
 
 ---
 
