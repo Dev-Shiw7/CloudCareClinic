@@ -204,3 +204,38 @@ def test_health(client):
     r = client.get("/health")
     assert r.status_code == 200
     assert r.json()["data"]["database"] is True
+
+
+# --------------------------------------------------------------------------
+# Malformed input: 400, distinct from field-level 422
+# --------------------------------------------------------------------------
+
+def test_malformed_json_returns_400_in_envelope(client):
+    r = client.post(
+        "/patients",
+        content=b'{"first_name": broken',
+        headers={"content-type": "application/json"},
+    )
+    assert r.status_code == 400
+    assert r.json()["data"] is None
+    assert r.json()["error"]["code"] == "bad_request"
+
+
+def test_bad_query_param_type_returns_400(client):
+    r = client.get("/patients", params={"limit": "abc"})
+    assert r.status_code == 400
+    assert r.json()["error"]["code"] == "bad_request"
+
+
+def test_unknown_route_404_keeps_envelope(client):
+    r = client.get("/does-not-exist")
+    assert r.status_code == 404
+    assert r.json()["data"] is None
+    assert "error" in r.json()
+
+
+def test_field_errors_are_still_422_not_400(client):
+    """A parseable body with bad values is 422, not 400."""
+    r = client.post("/patients", json={"first_name": "A"})
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "validation_error"

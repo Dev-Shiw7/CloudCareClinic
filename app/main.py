@@ -15,7 +15,9 @@ from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 load_dotenv()
 
@@ -94,6 +96,46 @@ def health() -> dict[str, object]:
 
     return {"data": {"status": "ok" if db_ok else "degraded", "database": db_ok},
             "error": None}
+
+
+@app.exception_handler(RequestValidationError)
+async def malformed_request_handler(request: Request, exc: RequestValidationError):
+    """400 for a body/params the framework could not even parse.
+
+    Field-level validation returns 422 from the service layer; this handler
+    covers the earlier failure - malformed JSON, a non-object body, a query
+    param of the wrong type - and keeps those responses inside the same
+    envelope rather than leaking FastAPI's default shape.
+    """
+    logging.getLogger(__name__).info(
+        "request.malformed", extra={"path": request.url.path}
+    )
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={
+            "data": None,
+            "error": {
+                "code": "bad_request",
+                "message": "Request body or parameters could not be parsed.",
+                "details": [
+                    {"location": list(e.get("loc", [])), "message": e.get("msg", "")}
+                    for e in exc.errors()[:10]
+                ],
+            },
+        },
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Keep 401/404/405 and friends inside the standard envelope."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "data": None,
+            "error": {"code": "http_error", "message": str(exc.detail)},
+        },
+    )
 
 
 @app.exception_handler(Exception)
