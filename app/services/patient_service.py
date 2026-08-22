@@ -4,7 +4,8 @@ This module is the single implementation of every patient operation. Both
 adapters - the public REST API and the voice-agent tool endpoints - call
 into here. Neither adapter contains business logic or SQL, which is what
 makes the "one service layer, two adapters" claim verifiable rather than
-aspirational (see tests/test_parity.py).
+aspirational (see test_voice_and_rest_produce_identical_records in
+tests/test_voice_flow.py).
 """
 
 from __future__ import annotations

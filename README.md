@@ -8,7 +8,7 @@ the voice agent can never write invalid data.
 | | |
 |---|---|
 | **Phone number** | **+1 (661) 215-8330** |
-| **API base URL** | `https://boom-guides-minds-expected.trycloudflare.com` |
+| **API base URL** | `https://cloudcareclinic.onrender.com` |
 | **Interactive API docs** | `<API base URL>/docs` |
 | **Health check** | `<API base URL>/health` |
 
@@ -89,7 +89,7 @@ Full reasoning, including the costs, is in [docs/DECISIONS.md](docs/DECISIONS.md
 | LLM | **Claude Sonnet 5** | Strong instruction-following on tool-call sequencing, which matters because the server drives the conversation. |
 | Backend | **FastAPI** | Pydantic makes the three-way validation result (`reason` / `reprompt` / `api_message`) natural to express, and the generated OpenAPI docs are a free deliverable. |
 | Database | **PostgreSQL** (Supabase) | Survives restarts on ephemeral hosting, handles per-turn concurrent writes, and can express a partial unique index and regex `CHECK`s. See decision 2. |
-| Hosting | Render / Railway / Fly | Any container host. `Procfile` and `/health` included. |
+| Hosting | **Render** | Deployed from this repo's `Procfile`; `/health` doubles as the platform health check. A durable hostname matters here because Vapi's tool URLs are baked into the assistant at provision time — an ephemeral tunnel would silently break every call after a restart. |
 
 ---
 
@@ -256,15 +256,16 @@ Transcripts arrive on Vapi's `end-of-call-report` webhook and are stored on
   ZIP that doesn't match the city is accepted.
 - **Transcript storage is best-effort** — it depends on Vapi's webhook
   arriving.
-- **Hosted behind a Cloudflare Quick Tunnel**, not a cloud platform. Chosen
-  deliberately: the two free tiers tried either required a payment card
-  (Render) or are serverless-only, which suits neither the per-turn
-  connection pooling nor the startup hook this app uses (Vercel). The
-  trade-off the brief names explicitly - "ngrok over cloud deploy" - applies
-  here, with the added benefit of no cold start. The cost is that the
-  hostname is ephemeral: restarting the tunnel changes it and
-  `python -m vapi.provision` must be re-run. Railway (no card needed for its
-  free credit) is the migration path for a durable URL.
+- **Hosted on Render's free tier**, which spins the service down after
+  ~15 minutes of inactivity. The first request after an idle period pays a
+  cold start of roughly 30-50 seconds, so the very first call of the day may
+  hit a slow first tool response. Subsequent calls are warm. Hitting
+  `/health` shortly before a review call avoids this entirely.
+- **Connection pool is sized for a demo** (`pool_size=5, max_overflow=5`).
+  Because the design writes once per conversational turn, several truly
+  concurrent calls plus the test suite can exhaust Supabase's pooler. Fine
+  for review-scale traffic; a real deployment wants pgbouncer sizing tuned
+  to expected concurrency.
 
 ---
 
