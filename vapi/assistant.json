@@ -245,6 +245,29 @@
     "take care"
   ],
   "analysisPlan": {
-    "summaryPrompt": "Summarise this patient registration call in two sentences: what was collected and how it ended."
+    "summaryPrompt": "Summarise this patient registration call in two sentences: what was collected and how it ended.",
+    "successEvaluationPrompt": "Did the caller complete registration and did the agent confirm a successful save? Answer true or false.",
+    "successEvaluationRubric": "PassFail"
+  },
+  "firstMessage": "",
+  "artifactPlan": {
+    "recordingEnabled": true,
+    "transcriptPlan": {
+      "enabled": true
+    }
+  },
+  "backgroundDenoisingEnabled": true,
+  "voicemailDetection": {
+    "provider": "vapi",
+    "backoffPlan": {
+      "maxRetries": 1
+    }
+  },
+  "messagePlan": {
+    "idleMessages": [
+      "Are you still there?"
+    ],
+    "idleTimeoutSeconds": 12,
+    "idleMessageMaxSpokenCount": 2
   }
 }
