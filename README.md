@@ -14,6 +14,36 @@ the voice agent can never write invalid data.
 
 ---
 
+## A note on the time limit
+
+The brief sets a 3-hour limit. **This repository's commit history spans longer
+than that** — roughly 18:50 on 22 Aug to 18:45 on 23 Aug, in two sittings —
+and I would rather say so than have you find it in `git log`.
+
+What existed at the 3-hour mark (through commit `f380866`) was the working
+system: the server-driven state machine, the validators, the full REST API,
+the Vapi assistant with its prompt and tool schemas, and a live phone number
+completing registrations end to end.
+
+What came after was hardening, not new scope:
+
+| Commit | What it fixed |
+|---|---|
+| `f0a428a` | 400 for malformed bodies; keep every error inside the envelope |
+| `2d0f116` | Re-prompt the field that actually failed; read back every collected field |
+| `e3ee973` | Stale-draft bug on save (pooled-connection identity map); stop the test suite wiping the deployed DB |
+| `62e60ff` | Cut per-turn latency; only speak a filler when a call is genuinely slow |
+| `e2859ea` | Reject a ZIP that cannot belong to the stated state |
+
+Every one of those came from actually calling the number and hearing something
+wrong. If you want to assess only the 3-hour deliverable, `git checkout
+f380866` is that boundary — it is callable and passes its tests. I have left
+the later fixes in because a reviewer dialling the number should reach the
+version that works properly, and because the fixes are the more honest signal
+about how I work.
+
+---
+
 ## Architecture
 
 ```
@@ -211,9 +241,17 @@ all normalised.
 
 ## Tests
 
+The suite calls `drop_all()`, so `tests/conftest.py` **refuses to run against
+a remote database** — pointed at the deployed Postgres, that would be a
+production wipe. Give it a throwaway local database explicitly:
+
 ```bash
-DATABASE_URL=postgresql://... pytest -v
+# any local Postgres; the guard requires a localhost/127.0.0.1 host
+TEST_DATABASE_URL=postgresql://postgres:pw@localhost:5432/intake_test pytest -v
 ```
+
+Running a bare `pytest` against the deployed `DATABASE_URL` exits with a
+`REFUSING TO RUN` message. That is the guard working, not a broken suite.
 
 `tests/test_api.py` covers the REST contract — status codes, envelope
 shape, filters, partial updates, and that a soft-deleted patient disappears

@@ -86,6 +86,11 @@ async def _unwrap(request: Request) -> ToolCall:
 
     tool_calls = message.get("toolCalls") or message.get("tool_calls") or []
     if tool_calls:
+        # Known assumption: one tool call per request. Vapi sends them one at
+        # a time for the sequencing this design depends on (each response
+        # names the next field), so a batch would mean the model ran ahead of
+        # the state machine. Handling only the first is the safe read - a
+        # second would be answered with a toolCallId Vapi did not ask about.
         entry = tool_calls[0]
         fn = entry.get("function", {})
         args = fn.get("arguments") or {}
