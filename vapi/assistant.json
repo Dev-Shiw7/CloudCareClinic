@@ -31,14 +31,14 @@
         "messages": [
           {
             "type": "request-start",
-            "timingMilliseconds": 2500,
             "contents": [
               {
                 "type": "text",
                 "language": "en",
                 "text": "One moment."
               }
-            ]
+            ],
+            "blocking": false
           }
         ]
       },
@@ -68,14 +68,14 @@
         "messages": [
           {
             "type": "request-start",
-            "timingMilliseconds": 2500,
             "contents": [
               {
                 "type": "text",
                 "language": "en",
                 "text": "Let me check that."
               }
-            ]
+            ],
+            "blocking": false
           }
         ]
       },
@@ -159,7 +159,6 @@
         "messages": [
           {
             "type": "request-start",
-            "timingMilliseconds": 2500,
             "contents": [
               {
                 "type": "text",
@@ -176,7 +175,8 @@
                 "language": "en",
                 "text": "Thanks."
               }
-            ]
+            ],
+            "blocking": false
           }
         ]
       },
@@ -198,14 +198,14 @@
         "messages": [
           {
             "type": "request-start",
-            "timingMilliseconds": 2500,
             "contents": [
               {
                 "type": "text",
                 "language": "en",
                 "text": "Let me read that back to you."
               }
-            ]
+            ],
+            "blocking": false
           }
         ]
       },
@@ -227,14 +227,14 @@
         "messages": [
           {
             "type": "request-start",
-            "timingMilliseconds": 2500,
             "contents": [
               {
                 "type": "text",
                 "language": "en",
                 "text": "No problem, starting fresh."
               }
-            ]
+            ],
+            "blocking": false
           }
         ]
       },
@@ -266,14 +266,14 @@
         "messages": [
           {
             "type": "request-start",
-            "timingMilliseconds": 2500,
             "contents": [
               {
                 "type": "text",
                 "language": "en",
                 "text": "Saving that now."
               }
-            ]
+            ],
+            "blocking": false
           }
         ]
       }

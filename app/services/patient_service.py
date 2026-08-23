@@ -23,6 +23,7 @@ from app.domain.validators import (
     ALL_FIELDS,
     REQUIRED_FIELDS,
     ValidationFailure,
+    cross_check_address,
     normalize_phone,
     validate_field,
 )
@@ -83,6 +84,14 @@ def validate_payload(
             cleaned[key] = result.value
         elif result.failure:
             failures.append(result.failure)
+
+    # Cross-field check: individually valid values can still be jointly
+    # impossible (a California state with a New York ZIP). Only meaningful
+    # once both fields are present and otherwise clean.
+    mismatch = cross_check_address(cleaned)
+    if mismatch is not None:
+        failures.append(mismatch)
+        cleaned.pop("zip_code", None)
 
     if require_all:
         for field in REQUIRED_FIELDS:
@@ -202,6 +211,17 @@ def update_patient(
         raise ValidationError(failures)
     if not cleaned:
         return patient
+
+    # A partial update may supply only one half of the pair, so check the
+    # incoming value against what is already stored - otherwise changing just
+    # the state could leave a row whose ZIP contradicts it.
+    merged = {
+        "state": cleaned.get("state", patient.state),
+        "zip_code": cleaned.get("zip_code", patient.zip_code),
+    }
+    mismatch = cross_check_address(merged)
+    if mismatch is not None:
+        raise ValidationError([mismatch])
 
     # Changing phone must not collide with another active record.
     new_phone = cleaned.get("phone_number")

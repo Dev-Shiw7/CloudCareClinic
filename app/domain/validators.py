@@ -456,6 +456,85 @@ def validate_emergency_contact_name(raw: object) -> FieldResult:
     return FieldResult.accept("emergency_contact_name", text)
 
 
+# --------------------------------------------------------------------------
+# ZIP-to-state cross-check
+#
+# The first three digits of a US ZIP (the "sectional centre facility") sit
+# inside ranges assigned to one state, so a ZIP and a state are jointly
+# checkable facts rather than two independent free-text fields. Speech
+# recognition mishears city and state names constantly ("Sydney" for
+# "Sidney", a state abbreviation heard as a different one), and a value that
+# is individually well-formed can still be impossible in combination.
+#
+# Ranges below are inclusive 3-digit prefixes. Kept as data rather than a
+# dependency: this is a stable published mapping, and a 3-hour build should
+# not take a package for it.
+# --------------------------------------------------------------------------
+ZIP_PREFIX_RANGES: dict[str, list[tuple[int, int]]] = {
+    "AL": [(350, 369)], "AK": [(995, 999)], "AZ": [(850, 865)],
+    "AR": [(716, 729), (755, 755)], "CA": [(900, 961)], "CO": [(800, 816)],
+    "CT": [(60, 69)], "DE": [(197, 199)], "DC": [(200, 205), (569, 569)],
+    "FL": [(320, 349)], "GA": [(300, 319), (398, 399)], "HI": [(967, 968)],
+    "ID": [(832, 838)], "IL": [(600, 629)], "IN": [(460, 479)],
+    "IA": [(500, 528)], "KS": [(660, 679)], "KY": [(400, 427)],
+    "LA": [(700, 714)], "ME": [(39, 49)], "MD": [(206, 219)],
+    "MA": [(10, 27), (55, 55)], "MI": [(480, 499)], "MN": [(550, 567)],
+    "MS": [(386, 397)], "MO": [(630, 658)], "MT": [(590, 599)],
+    "NE": [(680, 693)], "NV": [(889, 898)], "NH": [(30, 38)],
+    "NJ": [(70, 89)], "NM": [(870, 884)],
+    "NY": [(90, 149), (5, 5), (63, 63)], "NC": [(269, 289)],
+    "ND": [(580, 588)], "OH": [(430, 459)], "OK": [(730, 749)],
+    "OR": [(970, 979)], "PA": [(150, 196)], "RI": [(28, 29)],
+    "SC": [(290, 299)], "SD": [(570, 577)], "TN": [(370, 385)],
+    "TX": [(750, 799), (885, 885)], "UT": [(840, 847)], "VT": [(50, 59)],
+    "VA": [(220, 246)], "WA": [(980, 994)], "WV": [(247, 268)],
+    "WI": [(530, 549)], "WY": [(820, 831)],
+    "PR": [(6, 9)], "VI": [(8, 8)], "GU": [(969, 969)],
+    "AS": [(96, 96)], "MP": [(969, 969)],
+}
+
+
+def zip_matches_state(zip_code: str, state: str) -> bool:
+    """True if a 5-digit ZIP's prefix falls in the state's assigned ranges.
+
+    Unknown states pass: the caller is not made to argue with a gap in this
+    table. Only a definite contradiction is reported.
+    """
+    ranges = ZIP_PREFIX_RANGES.get((state or "").upper())
+    if not ranges or not zip_code:
+        return True
+    digits = re.sub(r"\D", "", zip_code)[:5]
+    if len(digits) < 5:
+        return True
+    prefix = int(digits[:3])
+    return any(lo <= prefix <= hi for lo, hi in ranges)
+
+
+def cross_check_address(cleaned: dict) -> Optional[ValidationFailure]:
+    """Report a ZIP that cannot belong to the given state.
+
+    Called once a payload is otherwise valid, because it is the *combination*
+    that is wrong - neither field is individually faulty, so neither can be
+    blamed on its own. The re-prompt names both values back to the caller so
+    they can tell us which one we misheard.
+    """
+    zip_code, state = cleaned.get("zip_code"), cleaned.get("state")
+    if not zip_code or not state or zip_matches_state(zip_code, state):
+        return None
+    return ValidationFailure(
+        field="zip_code",
+        reason="zip_state_mismatch",
+        reprompt=(
+            "I have {} as the state but {} as the ZIP, and those don't go "
+            "together — so I've misheard one of them. What's the city, state, "
+            "and ZIP again?".format(state, spoken_digits(str(zip_code)[:5]))
+        ),
+        api_message=(
+            "zip_code {} is not valid for state {}.".format(zip_code, state)
+        ),
+    )
+
+
 # Single dispatch table: field name -> validator.
 VALIDATORS: dict[str, Callable[[object], FieldResult]] = {
     "first_name": validate_first_name,
