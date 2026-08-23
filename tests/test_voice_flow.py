@@ -88,7 +88,40 @@ def test_start_reports_what_is_needed(client):
     body = r.json()
     assert body["next_field"] == "first_name"
     assert body["ready_to_confirm"] is False
-    assert len(body["still_needed"]) == 9
+    assert body["fields_remaining"] == 9
+    # The full outstanding list is withheld while collecting: handed all of
+    # it, the model asks for everything at once and the call stops sounding
+    # like a conversation.
+    assert "still_needed" not in body
+    assert "optional_not_yet_offered" not in body
+
+
+def test_start_asks_for_one_thing_not_the_whole_form(client):
+    """Turn 1 must offer the name pair only - not sixteen field names."""
+    body = _tool(client, "start", _call_id()).json()
+    assert body["ask_now"] == ["first_name", "last_name"]
+
+
+def test_ask_now_is_a_single_field_outside_sanctioned_pairs(client):
+    cid = _call_id()
+    _tool(client, "capture", cid,
+          {"fields": {"first_name": "Jane", "last_name": "Doe"}})
+    assert _tool(client, "capture", cid, {"fields": {}}).json()["ask_now"] == [
+        "date_of_birth"
+    ]
+
+
+def test_optional_fields_appear_only_once_required_set_is_done(client):
+    """The spec offers extras as an opt-in at the end, not up front."""
+    cid = _call_id()
+    mid = _tool(client, "capture", cid,
+                {"fields": {"first_name": "Jane"}}).json()
+    assert "optional_not_yet_offered" not in mid
+
+    done = _tool(client, "capture", cid,
+                 {"fields": dict(REQUIRED, phone_number=_phone())}).json()
+    assert done["ready_to_confirm"] is True
+    assert "email" in done["optional_not_yet_offered"]
 
 
 def test_capture_advances_next_field(client):
@@ -131,7 +164,7 @@ def test_restart_clears_the_draft(client):
     _tool(client, "capture", cid, {"fields": {"first_name": "Jane"}})
     r = _tool(client, "restart", cid)
     assert r.json()["next_field"] == "first_name"
-    assert len(r.json()["still_needed"]) == 9
+    assert r.json()["fields_remaining"] == 9
 
 
 def test_confirmation_is_chunked_not_one_blob(client):
@@ -167,7 +200,8 @@ def test_dropped_call_resumes_from_caller_id(client):
     body = r.json()
 
     assert body["resumed"] is True
-    assert "first_name" not in body["still_needed"]
+    # Three fields survived the drop, so six remain.
+    assert body["fields_remaining"] == 6
     assert body["next_field"] == "sex"
 
 

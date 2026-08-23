@@ -43,6 +43,16 @@ COLLECTION_ORDER = [
     "address_line_1", "city", "state", "zip_code",
 ]
 
+# The only fields worth asking for in one breath. A human intake coordinator
+# says "and what city and state?" but never strings five questions together,
+# so pairing is an explicit whitelist rather than left to the model's
+# judgement - given a list of everything still outstanding, an LLM reliably
+# front-loads it and the call stops sounding like a conversation.
+FIELD_PAIRS = {
+    "first_name": ["first_name", "last_name"],
+    "city": ["city", "state"],
+}
+
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
@@ -51,8 +61,16 @@ def _now() -> datetime:
 def get_or_create_session(
     session: Session, call_id: str, caller_phone: str | None = None
 ) -> CallSession:
-    """Fetch the session for this call, creating it on first contact."""
-    call = session.get(CallSession, call_id)
+    """Fetch the session for this call, creating it on first contact.
+
+    ``populate_existing`` forces a re-read rather than trusting whatever the
+    identity map holds. The engine uses ``expire_on_commit=False`` over a
+    connection pool, so a worker that handled an earlier turn can otherwise
+    hand back a cached row whose ``draft`` predates the fields captured
+    since - which made finalize see an empty draft and tell the caller it
+    still needed everything they had just given.
+    """
+    call = session.get(CallSession, call_id, populate_existing=True)
     if call is not None:
         return call
 
@@ -200,16 +218,36 @@ def progress(
     next_field = retry[0] if retry else (missing[0] if missing else None)
     retry_field = (retry + retry_optional)[0] if (retry or retry_optional) else None
 
-    return {
-        "still_needed": missing,
+    # Ask for one field, or one sanctioned pair - and only if the partner is
+    # also still outstanding, so a correction late in the call re-asks just
+    # the field that was wrong.
+    ask_now = [next_field] if next_field else []
+    if next_field and not retry:
+        ask_now = [f for f in FIELD_PAIRS.get(next_field, [next_field])
+                   if f in missing]
+
+    state: dict[str, Any] = {
         "next_field": next_field,
+        "ask_now": ask_now,
         "retry_field": retry_field,
         "ready_to_confirm": not missing,
-        "optional_not_yet_offered": optional_missing,
+        "fields_remaining": len(missing),
         "progress": "{} of {} required fields captured".format(
             len(REQUIRED_FIELDS) - len(missing), len(REQUIRED_FIELDS)
         ),
     }
+
+    # `still_needed` is the full outstanding list. It is deliberately withheld
+    # while collection is in flight: handed the whole form, the model asks for
+    # all of it at once. It only appears once nothing is outstanding (so a
+    # failed save can name what is missing) - see docs/DECISIONS.md.
+    if not missing:
+        state["still_needed"] = missing
+        # Optional extras are offered once, at the end, per the spec's
+        # opt-in note - so they stay hidden until the required set is done.
+        state["optional_not_yet_offered"] = optional_missing
+
+    return state
 
 
 def clear_draft(session: Session, call: CallSession) -> dict[str, Any]:
@@ -334,12 +372,21 @@ def finalize(
                 "message": "This registration was already saved.",
             }
 
+    # Re-read the row before judging completeness. A stale draft here is
+    # catastrophic for the caller: they hear "I still need a few details"
+    # about fields they already gave, and the whole intake starts again.
+    session.refresh(call)
     draft = dict(call.draft or {})
     state = progress(call)
-    if state["still_needed"]:
+    if not state["ready_to_confirm"]:
+        # A failed save is the one moment the agent needs the whole outstanding
+        # list, so name it explicitly rather than relying on progress().
         return {
             "status": "incomplete",
-            "still_needed": state["still_needed"],
+            "still_needed": [
+                f for f in COLLECTION_ORDER
+                if (call.draft or {}).get(f) in (None, "")
+            ],
             "next_field": state["next_field"],
             "message": (
                 "I still need a few details before I can save this."
