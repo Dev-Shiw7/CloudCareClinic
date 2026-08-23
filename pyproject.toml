@@ -1,0 +1,20 @@
+# Project metadata and tool configuration.
+#
+# The application is run via the Procfile (uvicorn app.main:app), not installed
+# as a package, so this file exists for tooling config and pytest's rootdir
+# discovery rather than for distribution.
+
+[project]
+name = "voice-intake"
+version = "1.0.0"
+description = "Voice AI patient registration: Vapi telephony over a FastAPI service layer and PostgreSQL."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+# Keeps `pytest` working from the repo root without a PYTHONPATH export.
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
