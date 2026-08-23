@@ -27,7 +27,20 @@
         "server": {
           "url": "__BASE_URL__/voice/start",
           "timeoutSeconds": 20
-        }
+        },
+        "messages": [
+          {
+            "type": "request-start",
+            "timingMilliseconds": 2500,
+            "contents": [
+              {
+                "type": "text",
+                "language": "en",
+                "text": "One moment."
+              }
+            ]
+          }
+        ]
       },
       {
         "type": "function",
@@ -51,7 +64,20 @@
         "server": {
           "url": "__BASE_URL__/voice/lookup",
           "timeoutSeconds": 20
-        }
+        },
+        "messages": [
+          {
+            "type": "request-start",
+            "timingMilliseconds": 2500,
+            "contents": [
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Let me check that."
+              }
+            ]
+          }
+        ]
       },
       {
         "type": "function",
@@ -129,7 +155,30 @@
         "server": {
           "url": "__BASE_URL__/voice/capture",
           "timeoutSeconds": 20
-        }
+        },
+        "messages": [
+          {
+            "type": "request-start",
+            "timingMilliseconds": 2500,
+            "contents": [
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Got it."
+              },
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Okay."
+              },
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Thanks."
+              }
+            ]
+          }
+        ]
       },
       {
         "type": "function",
@@ -145,7 +194,20 @@
         "server": {
           "url": "__BASE_URL__/voice/confirm",
           "timeoutSeconds": 20
-        }
+        },
+        "messages": [
+          {
+            "type": "request-start",
+            "timingMilliseconds": 2500,
+            "contents": [
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Let me read that back to you."
+              }
+            ]
+          }
+        ]
       },
       {
         "type": "function",
@@ -161,7 +223,20 @@
         "server": {
           "url": "__BASE_URL__/voice/restart",
           "timeoutSeconds": 20
-        }
+        },
+        "messages": [
+          {
+            "type": "request-start",
+            "timingMilliseconds": 2500,
+            "contents": [
+              {
+                "type": "text",
+                "language": "en",
+                "text": "No problem, starting fresh."
+              }
+            ]
+          }
+        ]
       },
       {
         "type": "function",
@@ -187,7 +262,20 @@
         "server": {
           "url": "__BASE_URL__/voice/finalize",
           "timeoutSeconds": 30
-        }
+        },
+        "messages": [
+          {
+            "type": "request-start",
+            "timingMilliseconds": 2500,
+            "contents": [
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Saving that now."
+              }
+            ]
+          }
+        ]
       }
     ]
   },

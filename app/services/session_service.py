@@ -165,7 +165,9 @@ def capture_fields(
         call.draft = draft
         call.updated_at = _now()
         session.commit()
-        session.refresh(call)
+        # No refresh: `draft` is the value we just committed, and every extra
+        # round-trip is audible. The database is not necessarily co-located
+        # with the app, so each query costs real conversational latency.
 
     logger.info(
         "call.captured",
