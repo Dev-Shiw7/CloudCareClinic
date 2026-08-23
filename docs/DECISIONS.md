@@ -152,3 +152,49 @@ the point of confirming. Chunking also lets a correction re-read one group
 instead of everything.
 
 **Cost.** Slightly more tool-response structure for the model to follow.
+
+---
+
+## 9. The opening line is fixed, not model-generated
+
+**Decision.** `firstMessageMode: assistant-speaks-first` with a hardcoded
+`firstMessage`. The model's first turn happens only after `start_call`
+returns.
+
+**Alternative.** Let the model generate the greeting
+(`assistant-speaks-first-with-model-generated-message`), which reads as more
+flexible.
+
+**Why.** It was measurably worse. Because the model must call `start_call`
+before it can know whether this is a new caller, a returning patient, or a
+resumed draft, a model-generated opening improvises filler to cover the tool
+latency — real transcripts from this number opened with *"This'll just take a
+sec."* and *"1 moment."* before the greeting. No prompt instruction reliably
+suppressed it, because the model is being asked to hold a turn open with
+nothing to say. Pinning the greeting removes the choice: Vapi speaks it
+instantly at pickup and `start_call` runs behind that audio, so the latency is
+hidden by speech rather than papered over with a stall.
+
+**Cost.** The greeting no longer adapts to a returning caller — everyone hears
+the same first sentence, and the recognition ("we already have a record for
+you") lands one turn later instead. Worth it: the first three seconds set
+whether the caller believes they are talking to a person.
+
+---
+
+## 10. Idle nudges are interchangeable; the goodbye is not
+
+**Decision.** `idleMessages` holds three neutral, order-independent nudges.
+The actual sign-off lives in `silenceTimeoutMessage`.
+
+**Why.** Vapi selects from `idleMessages` at **random**, not in order. A
+three-step escalation written into that array produces exactly the wrong
+call: a live transcript from this number played *"I can't hear anything on
+the line — I'll let you go for now"* and then *"Are you still there?"*,
+which sounds broken. Anything order-dependent cannot live there.
+`silenceTimeoutMessage` is the only line guaranteed to be last, so it owns
+the goodbye — and it tells the caller their details are saved, which is true,
+because the draft is already in Postgres.
+
+**Cost.** No gradual escalation in tone; the nudges are all equally gentle.
+

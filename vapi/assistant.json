@@ -1,6 +1,6 @@
 {
   "name": "CloudCare Clinic Intake",
-  "firstMessageMode": "assistant-speaks-first-with-model-generated-message",
+  "firstMessageMode": "assistant-speaks-first",
   "model": {
     "provider": "anthropic",
     "model": "claude-sonnet-5",
@@ -27,20 +27,7 @@
         "server": {
           "url": "__BASE_URL__/voice/start",
           "timeoutSeconds": 20
-        },
-        "messages": [
-          {
-            "type": "request-start",
-            "contents": [
-              {
-                "type": "text",
-                "language": "en",
-                "text": "One moment."
-              }
-            ],
-            "blocking": false
-          }
-        ]
+        }
       },
       {
         "type": "function",
@@ -73,9 +60,25 @@
                 "type": "text",
                 "language": "en",
                 "text": "Let me check that."
+              },
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Let me look that up."
               }
             ],
             "blocking": false
+          },
+          {
+            "type": "request-response-delayed",
+            "contents": [
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Still checking - one moment."
+              }
+            ],
+            "timingMilliseconds": 2000
           }
         ]
       },
@@ -174,9 +177,35 @@
                 "type": "text",
                 "language": "en",
                 "text": "Thanks."
+              },
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Perfect."
+              },
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Great."
+              },
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Lovely, thank you."
               }
             ],
             "blocking": false
+          },
+          {
+            "type": "request-response-delayed",
+            "contents": [
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Bear with me one sec."
+              }
+            ],
+            "timingMilliseconds": 1800
           }
         ]
       },
@@ -203,9 +232,25 @@
                 "type": "text",
                 "language": "en",
                 "text": "Let me read that back to you."
+              },
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Okay, let me go over what I have."
               }
             ],
             "blocking": false
+          },
+          {
+            "type": "request-response-delayed",
+            "contents": [
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Just pulling that together."
+              }
+            ],
+            "timingMilliseconds": 2000
           }
         ]
       },
@@ -232,6 +277,11 @@
                 "type": "text",
                 "language": "en",
                 "text": "No problem, starting fresh."
+              },
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Sure, let's start over."
               }
             ],
             "blocking": false
@@ -271,9 +321,25 @@
                 "type": "text",
                 "language": "en",
                 "text": "Saving that now."
+              },
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Putting that through now."
               }
             ],
             "blocking": false
+          },
+          {
+            "type": "request-response-delayed",
+            "contents": [
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Still working on it - bear with me."
+              }
+            ],
+            "timingMilliseconds": 2500
           }
         ]
       }
@@ -314,7 +380,7 @@
     "end-of-call-report",
     "status-update"
   ],
-  "silenceTimeoutSeconds": 20,
+  "silenceTimeoutSeconds": 45,
   "maxDurationSeconds": 900,
   "backgroundSound": "office",
   "startSpeakingPlan": {
@@ -337,7 +403,7 @@
     "successEvaluationPrompt": "Did the caller complete registration and did the agent confirm a successful save? Answer true or false.",
     "successEvaluationRubric": "PassFail"
   },
-  "firstMessage": "",
+  "firstMessage": "Thanks for calling CloudCare Clinic, this is Shiwani. I can get you registered as a new patient - it takes about two minutes. Is now a good time?",
   "artifactPlan": {
     "recordingEnabled": true,
     "transcriptPlan": {
@@ -353,9 +419,13 @@
   },
   "messagePlan": {
     "idleMessages": [
-      "Are you still there?"
+      "Take your time - whenever you're ready.",
+      "Are you still there?",
+      "Whenever you're ready, I just need that next detail."
     ],
-    "idleTimeoutSeconds": 12,
-    "idleMessageMaxSpokenCount": 2
+    "idleTimeoutSeconds": 10,
+    "idleMessageMaxSpokenCount": 3,
+    "idleMessageResetCountOnUserSpeechEnabled": true,
+    "silenceTimeoutMessage": "I can't hear anything on the line, so I'll let you go for now. Everything you've given me is saved - just call us back when it suits. Take care."
   }
 }
