@@ -259,3 +259,123 @@ def test_voice_and_rest_produce_identical_records(client):
 
     # Both normalised "California" -> "CA" through the same validator.
     assert via_voice["state"] == via_rest["state"] == "CA"
+
+
+# --------------------------------------------------------------------------
+# Spec requirement: "If the caller provides invalid data (e.g. a 3-digit
+# phone number, a future date of birth), the agent must re-prompt
+# specifically for that field."
+#
+# The agent is told to follow `next_field`, so the server has to keep the
+# rejected field there. If it advanced to the next uncollected field instead,
+# the invalid value would be silently deferred and never corrected.
+# --------------------------------------------------------------------------
+
+def test_rejected_required_field_stays_in_next_field(client):
+    call_id = _call_id()
+    body = _tool(
+        client,
+        "capture",
+        call_id,
+        {"fields": {"first_name": "Ada", "date_of_birth": "03/04/2099"}},
+    ).json()
+
+    assert body["accepted"] == ["first_name"]
+    assert [r["field"] for r in body["rejected"]] == ["date_of_birth"]
+    # The whole point: do not move on to last_name.
+    assert body["next_field"] == "date_of_birth"
+    assert body["retry_field"] == "date_of_birth"
+
+
+def test_three_digit_phone_reprompts_for_phone(client):
+    """The spec's other named example."""
+    call_id = _call_id()
+    body = _tool(
+        client, "capture", call_id, {"fields": {"phone_number": "415"}}
+    ).json()
+
+    assert body["next_field"] == "phone_number"
+    reprompt = body["rejected"][0]["reprompt"]
+    assert "3 digits" in reprompt
+
+
+def test_rejected_optional_field_does_not_block_confirmation(client):
+    """A garbled email must not hold the call hostage.
+
+    Optional fields are the caller's to skip, so a rejected one is surfaced
+    via retry_field but must leave ready_to_confirm alone.
+    """
+    call_id = _call_id()
+    _tool(
+        client,
+        "capture",
+        call_id,
+        {"fields": dict(REQUIRED, phone_number=_phone())},
+    )
+    body = _tool(
+        client, "capture", call_id, {"fields": {"email": "not-an-email"}}
+    ).json()
+
+    assert body["retry_field"] == "email"
+    assert body["ready_to_confirm"] is True
+    assert body["next_field"] is None
+
+
+# --------------------------------------------------------------------------
+# Spec requirement: "the agent must read back all collected information".
+# An emergency contact number the caller gave has to be spoken, or they
+# never get the chance to correct a misheard digit.
+# --------------------------------------------------------------------------
+
+def test_readback_includes_every_collected_field(client):
+    call_id = _call_id()
+    phone = _phone()
+    _tool(
+        client,
+        "capture",
+        call_id,
+        {
+            "fields": dict(
+                REQUIRED,
+                phone_number=phone,
+                email="ann@example.com",
+                address_line_2="Apt 3",
+                insurance_provider="Aetna",
+                insurance_member_id="AE99",
+                preferred_language="Spanish",
+                emergency_contact_name="Bo Lee",
+                emergency_contact_phone="6615550171",
+            )
+        },
+    )
+    spoken = " ".join(
+        c["text"] for c in _tool(client, "confirm", call_id).json()["chunks"]
+    )
+
+    assert "Bo Lee" in spoken
+    assert "0 1 7 1" in spoken        # emergency number, spoken digit by digit
+    assert "ann@example.com" in spoken
+    assert "Apt 3" in spoken
+    assert "Aetna" in spoken
+    assert "Spanish" in spoken
+
+
+def test_readback_speaks_emergency_number_without_a_name(client):
+    call_id = _call_id()
+    _tool(
+        client,
+        "capture",
+        call_id,
+        {
+            "fields": dict(
+                REQUIRED,
+                phone_number=_phone(),
+                emergency_contact_phone="6615550172",
+            )
+        },
+    )
+    spoken = " ".join(
+        c["text"] for c in _tool(client, "confirm", call_id).json()["chunks"]
+    )
+
+    assert "0 1 7 2" in spoken

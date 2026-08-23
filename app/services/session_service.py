@@ -168,19 +168,42 @@ def capture_fields(
             }
             for f in failures
         ],
-        **progress(call),
+        **progress(call, rejected_fields=[f.field for f in failures]),
     }
 
 
-def progress(call: CallSession) -> dict[str, Any]:
-    """What the agent still needs, and what to ask for next."""
+def progress(
+    call: CallSession, rejected_fields: list[str] | None = None
+) -> dict[str, Any]:
+    """What the agent still needs, and what to ask for next.
+
+    ``rejected_fields`` are fields the caller just answered with a value that
+    failed validation. They take priority in ``next_field``: the spec requires
+    that invalid input be re-prompted *for that specific field*, so the field
+    the caller must fix has to stay in front of the agent rather than being
+    silently deferred behind the next uncollected one.
+    """
     draft = call.draft or {}
     missing = [f for f in COLLECTION_ORDER if draft.get(f) in (None, "")]
     optional_missing = [f for f in OPTIONAL_FIELDS if draft.get(f) in (None, "")]
 
+    # A rejected *required* field is still "missing", so it is already in
+    # `missing` - promote it rather than appending a duplicate. A rejected
+    # *optional* field (a garbled email, say) is not in `missing` at all, so
+    # surface it via retry_field only: it must not block ready_to_confirm,
+    # because the caller is always free to skip an optional value.
+    retry = [f for f in (rejected_fields or []) if f in missing]
+    retry_optional = [
+        f for f in (rejected_fields or [])
+        if f not in missing and f in OPTIONAL_FIELDS
+    ]
+    next_field = retry[0] if retry else (missing[0] if missing else None)
+    retry_field = (retry + retry_optional)[0] if (retry or retry_optional) else None
+
     return {
         "still_needed": missing,
-        "next_field": missing[0] if missing else None,
+        "next_field": next_field,
+        "retry_field": retry_field,
         "ready_to_confirm": not missing,
         "optional_not_yet_offered": optional_missing,
         "progress": "{} of {} required fields captured".format(
@@ -264,8 +287,18 @@ def confirmation_script(call: CallSession) -> dict[str, Any]:
             )
         extras.append(extra)
     if d.get("emergency_contact_name"):
+        extra = "Emergency contact {}".format(d["emergency_contact_name"])
+        # The spec requires reading back *all* collected information, so an
+        # emergency number the caller gave has to be spoken too - otherwise
+        # they never get the chance to correct a misheard digit.
+        if d.get("emergency_contact_phone"):
+            extra += " at {}".format(spoken_phone(d["emergency_contact_phone"]))
+        extras.append(extra)
+    elif d.get("emergency_contact_phone"):
         extras.append(
-            "Emergency contact {}".format(d["emergency_contact_name"])
+            "Emergency contact number {}".format(
+                spoken_phone(d["emergency_contact_phone"])
+            )
         )
     if d.get("preferred_language") and d["preferred_language"] != "English":
         extras.append("Preferred language {}".format(d["preferred_language"]))

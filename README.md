@@ -66,7 +66,8 @@ to say about it), and which field to ask for next:
     "reprompt": "I heard March 4, 2027, but that's in the future. What year were you born?"
   }],
   "still_needed": ["date_of_birth", "sex", "phone_number", "..."],
-  "next_field": "date_of_birth",
+  "next_field": "date_of_birth",   // stays on the rejected field, not the next one
+  "retry_field": "date_of_birth",
   "ready_to_confirm": false,
   "progress": "2 of 9 required fields captured"
 }
@@ -179,8 +180,10 @@ instruction:
 
 **Invalid date of birth.** `validators.py` rejects unparseable dates, future
 dates, and ages over 130, returning a specific spoken re-prompt naming what
-was wrong. The database independently enforces `CHECK (date_of_birth <=
-CURRENT_DATE)`.
+was wrong. The rejected field also stays in `next_field` (and is named in
+`retry_field`), so the agent — which is instructed to follow `next_field` —
+re-asks for that field instead of advancing past it. The database
+independently enforces `CHECK (date_of_birth <= CURRENT_DATE)`.
 
 **Connection drops mid-call.** The draft is already in Postgres. On redial,
 `/voice/start` finds the in-progress session by caller ID (within 30
@@ -224,6 +227,13 @@ from reads while the row survives with `deleted_at` set.
   share one service layer, rather than just asserting it in prose
 - `test_invalid_field_returns_speakable_reprompt` — validation returns
   something a human can say
+- `test_rejected_required_field_stays_in_next_field` and
+  `test_three_digit_phone_reprompts_for_phone` — the spec's two named
+  invalid-input examples re-prompt for *that* field rather than moving on
+- `test_rejected_optional_field_does_not_block_confirmation` — a garbled
+  email cannot hold the call hostage
+- `test_readback_includes_every_collected_field` — the confirmation step
+  speaks all collected data, including the emergency contact number
 
 ---
 
