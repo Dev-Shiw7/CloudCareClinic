@@ -21,6 +21,7 @@ from typing import Any, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.domain import validators
 from app.domain.models import CallSession, Patient
 from app.domain.validators import (
     OPTIONAL_FIELDS,
@@ -158,6 +159,25 @@ def capture_fields(
     cleaned, failures = patient_service.validate_payload(
         fields, require_all=False
     )
+
+    # Cross-field checks need the whole address, not just this turn's batch.
+    # The caller says the ZIP on its own turn, so validate_payload above sees
+    # no `state` to compare it against and cannot fire. Re-run the check
+    # against the draft as it would look after this batch, so a ZIP that
+    # cannot belong to the state is caught during the address conversation
+    # rather than surfacing at the save step - after "saving that now" is far
+    # too late to be asking which value was misheard.
+    if cleaned:
+        prospective = {**(call.draft or {}), **cleaned}
+        mismatch = validators.cross_check_address(prospective)
+        if mismatch is not None and not any(
+            f.field == mismatch.field for f in failures
+        ):
+            failures.append(mismatch)
+            # Keep the state, drop the ZIP: a misheard 5-digit number is far
+            # more likely than a misheard state name, and re-asking both at
+            # once is what the re-prompt already does.
+            cleaned.pop("zip_code", None)
 
     if cleaned:
         draft = dict(call.draft or {})
@@ -411,17 +431,42 @@ def finalize(
             )
             action = "created"
     except patient_service.ValidationError as exc:
-        # Should be unreachable - everything in the draft already passed the
-        # same validators - but a caller must never hear silence.
-        logger.exception("call.finalize_validation_failed",
-                         extra={"call_id": call.call_id})
+        # Reachable by design, despite every field having passed validation
+        # individually: the cross-field checks (a ZIP that cannot belong to
+        # the given state) can only run against a complete payload, so they
+        # fire here rather than at capture time.
+        #
+        # `message` carries the first re-prompt verbatim rather than a
+        # generic "some details need fixing". The model has to say something
+        # immediately after "saving that now", and a vague status invites it
+        # to improvise a stall ("let me just double check one thing") and go
+        # quiet - which is exactly what a caller must never hear at the save
+        # step. Handing it the sentence removes the choice.
+        logger.warning(
+            "call.finalize_validation_failed",
+            extra={
+                "call_id": call.call_id,
+                "rejected": [f.reason for f in exc.failures],
+            },
+        )
+        # Drop the offending values so the state machine asks for them again
+        # instead of re-rejecting the same draft on the next save attempt.
+        draft_after = dict(call.draft or {})
+        for failure in exc.failures:
+            draft_after.pop(failure.field, None)
+        call.draft = draft_after
+        call.updated_at = _now()
+        session.commit()
+
         return {
             "status": "invalid",
             "rejected": [
                 {"field": f.field, "reason": f.reason, "reprompt": f.reprompt}
                 for f in exc.failures
             ],
-            "message": "A couple of details need fixing before I can save.",
+            "message": exc.failures[0].reprompt,
+            "next_field": exc.failures[0].field,
+            "retry_field": exc.failures[0].field,
         }
     except Exception:
         logger.exception("call.finalize_failed",
