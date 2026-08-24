@@ -21,7 +21,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 load_dotenv()
 
-from app.adapters import dashboard, rest, voice  # noqa: E402
+from app.adapters import rest, voice  # noqa: E402
 from app.infra.db import engine, init_db  # noqa: E402
 
 # Fields we attach to log records via `extra=`; everything else on a
@@ -79,7 +79,6 @@ app = FastAPI(
 
 app.include_router(rest.router)
 app.include_router(voice.router)
-app.include_router(dashboard.router)
 
 
 @app.get("/health", tags=["ops"])
