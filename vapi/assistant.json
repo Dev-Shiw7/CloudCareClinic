@@ -381,17 +381,12 @@
     "backoffSeconds": 1.0
   },
   "endCallFunctionEnabled": true,
-  "endCallPhrases": [
-    "goodbye",
-    "have a great day",
-    "take care"
-  ],
   "analysisPlan": {
     "summaryPrompt": "Summarise this patient registration call in two sentences: what was collected and how it ended.",
     "successEvaluationPrompt": "Did the caller complete registration and did the agent confirm a successful save? Answer true or false.",
     "successEvaluationRubric": "PassFail"
   },
-  "firstMessage": "Thanks for calling CloudCare Clinic, this is Shiwani.",
+  "firstMessage": "Thanks for calling CloudCare Clinic, this is Shiwani. I can get you registered as a new patient - I'll take a few basic details, about two minutes, and then the care team has everything they need for your first visit. Sound good?",
   "artifactPlan": {
     "recordingEnabled": true,
     "transcriptPlan": {
@@ -415,5 +410,6 @@
     "idleMessageMaxSpokenCount": 2,
     "idleMessageResetCountOnUserSpeechEnabled": true,
     "silenceTimeoutMessage": "I'll let you go for now - everything you've given me is saved. Do call us back when it suits. Take care."
-  }
+  },
+  "endCallMessage": "Thanks again for calling CloudCare Clinic. Take care."
 }
