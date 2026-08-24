@@ -55,6 +55,7 @@
         "messages": [
           {
             "type": "request-start",
+            "blocking": false,
             "contents": [
               {
                 "type": "text",
@@ -64,21 +65,9 @@
               {
                 "type": "text",
                 "language": "en",
-                "text": "Let me look that up."
+                "text": "Let me have a look."
               }
-            ],
-            "blocking": false
-          },
-          {
-            "type": "request-response-delayed",
-            "contents": [
-              {
-                "type": "text",
-                "language": "en",
-                "text": "Still checking - one moment."
-              }
-            ],
-            "timingMilliseconds": 2000
+            ]
           }
         ]
       },
@@ -162,12 +151,8 @@
         "messages": [
           {
             "type": "request-start",
+            "blocking": false,
             "contents": [
-              {
-                "type": "text",
-                "language": "en",
-                "text": "Got it."
-              },
               {
                 "type": "text",
                 "language": "en",
@@ -176,36 +161,40 @@
               {
                 "type": "text",
                 "language": "en",
-                "text": "Thanks."
+                "text": "Right."
               },
               {
                 "type": "text",
                 "language": "en",
-                "text": "Perfect."
+                "text": "Sure."
               },
               {
                 "type": "text",
                 "language": "en",
-                "text": "Great."
+                "text": "Thank you."
               },
               {
                 "type": "text",
                 "language": "en",
-                "text": "Lovely, thank you."
+                "text": "Of course."
+              },
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Certainly."
               }
-            ],
-            "blocking": false
+            ]
           },
           {
             "type": "request-response-delayed",
+            "timingMilliseconds": 2200,
             "contents": [
               {
                 "type": "text",
                 "language": "en",
-                "text": "Bear with me one sec."
+                "text": "Just a moment."
               }
-            ],
-            "timingMilliseconds": 1800
+            ]
           }
         ]
       },
@@ -227,30 +216,24 @@
         "messages": [
           {
             "type": "request-start",
+            "blocking": false,
             "contents": [
-              {
-                "type": "text",
-                "language": "en",
-                "text": "Let me read that back to you."
-              },
               {
                 "type": "text",
                 "language": "en",
                 "text": "Okay, let me go over what I have."
-              }
-            ],
-            "blocking": false
-          },
-          {
-            "type": "request-response-delayed",
-            "contents": [
+              },
               {
                 "type": "text",
                 "language": "en",
-                "text": "Just pulling that together."
+                "text": "Let me read this back so you can check it."
+              },
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Right, here's what I've got."
               }
-            ],
-            "timingMilliseconds": 2000
+            ]
           }
         ]
       },
@@ -316,30 +299,35 @@
         "messages": [
           {
             "type": "request-start",
+            "blocking": false,
             "contents": [
               {
                 "type": "text",
                 "language": "en",
-                "text": "Saving that now."
+                "text": "Okay, let me get this saved for you."
               },
               {
                 "type": "text",
                 "language": "en",
                 "text": "Putting that through now."
+              },
+              {
+                "type": "text",
+                "language": "en",
+                "text": "Getting that saved."
               }
-            ],
-            "blocking": false
+            ]
           },
           {
             "type": "request-response-delayed",
+            "timingMilliseconds": 2500,
             "contents": [
               {
                 "type": "text",
                 "language": "en",
-                "text": "Still working on it - bear with me."
+                "text": "Still going - one moment."
               }
-            ],
-            "timingMilliseconds": 2500
+            ]
           }
         ]
       }

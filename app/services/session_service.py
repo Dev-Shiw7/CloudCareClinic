@@ -198,7 +198,7 @@ def capture_fields(
         },
     )
 
-    return {
+    result = {
         "accepted": sorted(cleaned.keys()),
         "rejected": [
             {
@@ -210,6 +210,41 @@ def capture_fields(
         ],
         **progress(call, rejected_fields=[f.field for f in failures]),
     }
+
+    # Duplicate detection, second chance. /voice/start catches a returning
+    # caller from caller ID, but carriers withhold it more often than not -
+    # every test call to this number arrived as "Unknown" - and a withheld
+    # number is exactly when the check matters, because nothing else has
+    # identified the caller. So when the phone number arrives by voice
+    # instead, check it here too, once, at the moment it is captured.
+    if "phone_number" in cleaned and call.matched_patient_id is None:
+        existing = patient_service.find_active_by_phone(
+            session, cleaned["phone_number"]
+        )
+        if existing is not None:
+            call.matched_patient_id = existing.patient_id
+            session.commit()
+            result["existing_patient"] = {
+                "patient_id": str(existing.patient_id),
+                "first_name": existing.first_name,
+                "last_name": existing.last_name,
+            }
+            result["duplicate_hint"] = (
+                "We already have a record for {} {}. Ask whether they would "
+                "like to update it instead of creating a new one.".format(
+                    existing.first_name, existing.last_name
+                )
+            )
+            logger.info(
+                "call.duplicate_detected",
+                extra={
+                    "call_id": call.call_id,
+                    "patient_id": str(existing.patient_id),
+                    "via": "spoken_number",
+                },
+            )
+
+    return result
 
 
 def progress(
