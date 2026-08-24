@@ -7,7 +7,7 @@ the voice agent can never write invalid data.
 
 | | |
 |---|---|
-| **Phone number** | **+1 (661) 215-8330** |
+| **Phone number** | **+1 (661) 215-8249** |
 | **API base URL** | `https://cloudcareclinic.onrender.com` |
 | **Interactive API docs** | `<API base URL>/docs` |
 | **Health check** | `<API base URL>/health` |

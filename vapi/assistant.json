@@ -1,6 +1,6 @@
 {
   "name": "CloudCare Clinic Intake",
-  "firstMessageMode": "assistant-speaks-first",
+  "firstMessageMode": "assistant-speaks-first-with-model-generated-message",
   "model": {
     "provider": "anthropic",
     "model": "claude-sonnet-5",
@@ -368,7 +368,7 @@
     "end-of-call-report",
     "status-update"
   ],
-  "silenceTimeoutSeconds": 45,
+  "silenceTimeoutSeconds": 40,
   "maxDurationSeconds": 900,
   "backgroundSound": "office",
   "startSpeakingPlan": {
@@ -391,7 +391,7 @@
     "successEvaluationPrompt": "Did the caller complete registration and did the agent confirm a successful save? Answer true or false.",
     "successEvaluationRubric": "PassFail"
   },
-  "firstMessage": "Thanks for calling CloudCare Clinic, this is Shiwani. I can get you registered as a new patient - it takes about two minutes. Is now a good time?",
+  "firstMessage": "",
   "artifactPlan": {
     "recordingEnabled": true,
     "transcriptPlan": {
@@ -407,13 +407,13 @@
   },
   "messagePlan": {
     "idleMessages": [
-      "Take your time - whenever you're ready.",
-      "Are you still there?",
-      "Whenever you're ready, I just need that next detail."
+      "Take your time.",
+      "No rush.",
+      "Are you still there?"
     ],
-    "idleTimeoutSeconds": 10,
-    "idleMessageMaxSpokenCount": 3,
+    "idleTimeoutSeconds": 12,
+    "idleMessageMaxSpokenCount": 2,
     "idleMessageResetCountOnUserSpeechEnabled": true,
-    "silenceTimeoutMessage": "I can't hear anything on the line, so I'll let you go for now. Everything you've given me is saved - just call us back when it suits. Take care."
+    "silenceTimeoutMessage": "I'll let you go for now - everything you've given me is saved. Do call us back when it suits. Take care."
   }
 }
