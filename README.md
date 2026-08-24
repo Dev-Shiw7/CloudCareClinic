@@ -9,6 +9,7 @@ the voice agent can never write invalid data.
 |---|---|
 | **Phone number** | **+1 (661) 215-8249** |
 | **API base URL** | `https://cloudcareclinic.onrender.com` |
+| **Dashboard** | `<API base URL>/` |
 | **Interactive API docs** | `<API base URL>/docs` |
 | **Health check** | `<API base URL>/health` |
 
@@ -198,6 +199,15 @@ Note that `"California"` is stored as `CA` and `"(415) 555-0147"` as
 `+14155550147` — the REST API and the voice agent share one normalisation
 path.
 
+### Dashboard
+
+`GET /` serves a read-only HTML view of the patients table, with the same
+three filters as `GET /patients`. It is a third adapter
+([`app/adapters/dashboard.py`](app/adapters/dashboard.py)) over the same
+service layer — no build step, no CDN, no framework, and no write surface:
+creating and deleting patients stays with the REST API rather than exposing
+an unauthenticated form on the public internet.
+
 ### Voice tool endpoints
 
 `POST /voice/{start,lookup,capture,confirm,restart,finalize,event}` — internal, not
@@ -327,7 +337,6 @@ Transcripts arrive on Vapi's `end-of-call-report` webhook and are stored on
 3. Externalise re-prompts into a message catalogue, then enable Spanish —
    the state machine is already language-agnostic, only the strings are not.
 4. Appointment scheduling after registration (mock slots).
-5. A read-only dashboard over `GET /patients`.
-6. USPS or Smarty address verification on the city/state/ZIP triple.
-7. Load-test concurrent calls; add a write-behind cache for `draft` if
+5. USPS or Smarty address verification on the city/state/ZIP triple.
+6. Load-test concurrent calls; add a write-behind cache for `draft` if
    per-turn writes become a bottleneck.
