@@ -330,6 +330,13 @@
             ]
           }
         ]
+      },
+      {
+        "type": "endCall",
+        "function": {
+          "name": "end_call",
+          "description": "Hang up. Call this only after you have finished speaking your closing sentence - after a successful save and goodbye, after an unrecoverable save failure, or when the caller says goodbye."
+        }
       }
     ]
   },
