@@ -1,6 +1,6 @@
 {
   "name": "CloudCare Clinic Intake",
-  "firstMessageMode": "assistant-speaks-first-with-model-generated-message",
+  "firstMessageMode": "assistant-speaks-first",
   "model": {
     "provider": "anthropic",
     "model": "claude-sonnet-5",
@@ -391,7 +391,7 @@
     "successEvaluationPrompt": "Did the caller complete registration and did the agent confirm a successful save? Answer true or false.",
     "successEvaluationRubric": "PassFail"
   },
-  "firstMessage": "",
+  "firstMessage": "Thanks for calling CloudCare Clinic, this is Shiwani.",
   "artifactPlan": {
     "recordingEnabled": true,
     "transcriptPlan": {
