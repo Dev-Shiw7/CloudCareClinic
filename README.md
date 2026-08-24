@@ -17,30 +17,33 @@ the voice agent can never write invalid data.
 ## A note on the time limit
 
 The brief sets a 3-hour limit. **This repository's commit history spans longer
-than that** — roughly 18:50 on 22 Aug to 18:45 on 23 Aug, in two sittings —
-and I would rather say so than have you find it in `git log`.
+than that** — the first commit is 22 Aug, the last 24 Aug — and I would rather
+say so plainly than have you find it in `git log`.
 
-What existed at the 3-hour mark (through commit `f380866`) was the working
-system: the server-driven state machine, the validators, the full REST API,
-the Vapi assistant with its prompt and tool schemas, and a live phone number
-completing registrations end to end.
+**The 3-hour deliverable is commit `f380866`** (22 Aug, 18:50 → 21:39). At that
+point the system was complete and callable: the server-driven state machine,
+the validators, the full REST API, the Vapi assistant with its prompt and tool
+schemas, and a live phone number completing registrations end to end. If you
+want to assess only what the brief asked for, `git checkout f380866` is that
+boundary and it passes its own tests.
 
-What came after was hardening, not new scope:
+Everything after it is repair, not new scope. Each fix came from placing a real
+call and hearing something wrong:
 
-| Commit | What it fixed |
+| Fix | The symptom that caused it |
 |---|---|
-| `f0a428a` | 400 for malformed bodies; keep every error inside the envelope |
-| `2d0f116` | Re-prompt the field that actually failed; read back every collected field |
-| `e3ee973` | Stale-draft bug on save (pooled-connection identity map); stop the test suite wiping the deployed DB |
-| `62e60ff` | Cut per-turn latency; only speak a filler when a call is genuinely slow |
-| `e2859ea` | Reject a ZIP that cannot belong to the stated state |
+| Envelope + status codes | a malformed body escaped the `{data, error}` shape |
+| Field-specific re-prompts | an invalid value was deferred instead of re-asked |
+| Stale draft on save | pooled connections served an old draft; the caller was asked twice |
+| ZIP/state cross-check | "Chicago, Illinois, 11100" saved without complaint |
+| Never go silent at save | an unhandled status left the caller in dead air |
+| Duplicate detection mid-call | carriers withhold caller ID, so the check never fired |
+| Real hang-up tool | `endCallPhrases` cut the agent off mid-goodbye |
+| Correction after save | a post-save fix was acknowledged and silently dropped |
 
-Every one of those came from actually calling the number and hearing something
-wrong. If you want to assess only the 3-hour deliverable, `git checkout
-f380866` is that boundary — it is callable and passes its tests. I have left
-the later fixes in because a reviewer dialling the number should reach the
-version that works properly, and because the fixes are the more honest signal
-about how I work.
+I have left them in because a reviewer dialling the number should reach the
+version that actually works, and because how a system gets debugged is a more
+honest signal than how fast it was first assembled.
 
 ---
 
