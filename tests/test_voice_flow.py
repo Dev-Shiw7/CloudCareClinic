@@ -221,6 +221,34 @@ def test_save_is_idempotent_on_retry(client):
     assert second["patient_id"] == first["patient_id"]
 
 
+def test_correction_after_save_updates_the_record(client):
+    """A caller who fixes a detail after "you're all set" must be believed.
+
+    The idempotency guard returns already_saved on a second finalize. A
+    correction arrives the same way, so without comparing the draft to the
+    stored row the change is silently dropped and the caller is told it was
+    fixed while the database still holds the old value.
+    """
+    cid = _call_id()
+    caller = _phone()
+    _tool(client, "capture", cid,
+          {"fields": {**REQUIRED, "phone_number": caller}})
+    created = _tool(client, "finalize", cid).json()
+    assert created["status"] == "created"
+
+    # An unchanged retry is still a no-op.
+    assert _tool(client, "finalize", cid).json()["status"] == "already_saved"
+
+    # ... but a real correction is written through.
+    _tool(client, "capture", cid, {"fields": {"city": "Oakland"}})
+    fixed = _tool(client, "finalize", cid).json()
+    assert fixed["status"] == "updated"
+    assert fixed["patient_id"] == created["patient_id"]
+
+    row = client.get("/patients/{}".format(created["patient_id"])).json()["data"]
+    assert row["city"] == "Oakland"
+
+
 def test_finalize_refuses_incomplete_draft(client):
     cid = _call_id()
     _tool(client, "start", cid)

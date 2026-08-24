@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Optional
 
 from sqlalchemy import select
@@ -410,6 +410,22 @@ def confirmation_script(call: CallSession) -> dict[str, Any]:
     }
 
 
+def _differs(patient: Patient, field: str, value: Any) -> bool:
+    """True if a draft value differs from what is stored on the patient.
+
+    Dates and phone numbers are normalised on the way into the database, so
+    compare their stored string forms rather than the raw spoken text.
+    """
+    if not hasattr(patient, field):
+        return False
+    current = getattr(patient, field)
+    if current is None:
+        return value not in (None, "")
+    if isinstance(current, date):
+        return str(current) != str(value)
+    return str(current) != str(value)
+
+
 def finalize(
     session: Session, call: CallSession, mode: str = "auto"
 ) -> dict[str, Any]:
@@ -422,11 +438,44 @@ def finalize(
     if call.patient_id is not None:
         patient = session.get(Patient, call.patient_id)
         if patient is not None:
+            # Two very different things reach this branch: a Vapi retry of a
+            # tool call that already succeeded, and a caller who corrected a
+            # detail after hearing "you're all set". Returning already_saved
+            # for both silently discards the correction - the caller is told
+            # it is fixed while the row still holds the old value.
+            #
+            # Compare the draft against the saved row: identical means retry,
+            # different means the caller changed something and the record has
+            # to be updated.
+            changed = {
+                field: value
+                for field, value in (call.draft or {}).items()
+                if _differs(patient, field, value)
+            }
+            if not changed:
+                return {
+                    "status": "already_saved",
+                    "patient_id": str(patient.patient_id),
+                    "first_name": patient.first_name,
+                    "message": "This registration was already saved.",
+                }
+
+            patient = patient_service.update_patient(
+                session, patient.patient_id, changed, source="voice"
+            )
+            logger.info(
+                "call.updated_after_save",
+                extra={
+                    "call_id": call.call_id,
+                    "patient_id": str(patient.patient_id),
+                    "fields": sorted(changed),
+                },
+            )
             return {
-                "status": "already_saved",
+                "status": "updated",
                 "patient_id": str(patient.patient_id),
                 "first_name": patient.first_name,
-                "message": "This registration was already saved.",
+                "message": "That's updated now, {}.".format(patient.first_name),
             }
 
     # Re-read the row before judging completeness. A stale draft here is
